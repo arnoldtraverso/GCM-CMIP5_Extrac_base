@@ -18,7 +18,7 @@
 
 // Ingresar el shapefile
 
-var HidroCuenca = ee.FeatureCollection("projects/ee-arnoldtraverso/assets/UH_amazonas");
+var HidroCuenca = ee.FeatureCollection("projects/ee-arnoldtraverso/assets/UH_Pacifico");
 
 // Agregar a mapa, en base a color
 
@@ -33,11 +33,11 @@ Map.addLayer(HidroCuenca.style(estilo))
 
 // 2. Agregar los atributos para los GCM CMIP5
 
-var listModel = [ 'ACCESS1-0', 'bcc-csm1-1'
-                  // 'BNU-ESM', 'CanESM2', 'CCSM4', 'CESM1-BGC', 'CNRM-CM5', 'CSIRO-Mk3-6-0',
-                  // GFDL-CM3', 'GFDL-ESM2G', 'GFDL-ESM2M', 'inmcm4', 'IPSL-CM5A-LR', 
-                  // 'IPSL-CM5A-MR', 'MIROC-ESM', 'MIROC-ESM-CHEM', 'MIROC5', 'MPI-ESM-LR',
-                  // 'MPI-ESM-MR', 'MRI-CGCM3', 'NorESM1-M'
+var listModel = [ 'ACCESS1-0', 'bcc-csm1-1', 'BNU-ESM', 'CanESM2',
+                  'CCSM4', 'CESM1-BGC', 'CNRM-CM5', 'CSIRO-Mk3-6-0',
+                  'GFDL-CM3', 'GFDL-ESM2G', 'GFDL-ESM2M', 'inmcm4', 'IPSL-CM5A-LR', 
+                  'IPSL-CM5A-MR', 'MIROC-ESM', 'MIROC-ESM-CHEM', 'MIROC5', 'MPI-ESM-LR',
+                  'MPI-ESM-MR', 'MRI-CGCM3', 'NorESM1-M'
                   ];
 
 var listScenario = ['historical']; // Escenario
@@ -66,23 +66,21 @@ var PcpDATA = function(image){
 
 // Loop para ordenar los modelos
 
+var listEXP = ee.List([]);
+
 for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
+  
     var param = {model: listGCMmodel[listGCM][0],      // Modelo GCM
                  scenario: listGCMmodel[listGCM][1],   // experimento rcp/historical
                  variable: listGCMmodel[listGCM][2]    // pr, tasmin, tasmax
-      
-    }
-    
-  print('Mostrar modelo y escenario:', param.model, param.scenario)
+                 }
 
-  // Generando una lista vacia
-  
-  var listEXP = ee.List([]);
+  print('Mostrar modelo y escenario:', param.model, param.scenario)
   
   // Fechas del modelo historico, Formato Año mes dia (YYYY-MM-DD)
   
-  var DateIni = '2000-01-01';
-  var DateFin = '2004-12-31';
+  var DateIni = '1990-01-01';
+  var DateFin = '1990-12-31';
   
   // 3. Ejecucion para extrccion de datos
   
@@ -105,8 +103,7 @@ for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
                         geometry: UH,
                         scale: 25000,
                         maxPixels: 1e12
-                      })
-                      .get(param.variable)
+                      }).get(param.variable)
                       
     var PCP = ee.Feature(null);
     
@@ -117,14 +114,13 @@ for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
     }
     
     var PCPGCM = SelectGCM.map(extrac);
-    listEXP = listEXP.add(PCPGCM)
-    var DataEXP = ee.FeatureCollection(listEXP).flatten();
+    listEXP = listEXP.add(PCPGCM);
     
   }
   
-  // print('tamaño de muestra:', PCPGCM.size());
-   print(DataEXP.limit(5));
 }
+
+var DataEXP = ee.FeatureCollection(listEXP).flatten();
 
 // ******************************************************************************
 // Representando los valores extraidos
@@ -142,7 +138,7 @@ var rgbVis = {
 
 // Seleccionado una fecha para plot
 
-var featureCol = ee.ImageCollection(SelectGCM.filterDate('2000-02-01', '2000-02-02'));
+var featureCol = ee.ImageCollection(SelectGCM.filterDate('2000-03-01', '2000-03-02'));
 
 // Agregando al mapa
 
@@ -165,7 +161,8 @@ Map.addLayer(HidroCuenca.style(estilo2));
 // ******************************************************************************
 
 var chartData = DataEXP.select(['fecha', 'valor']).limit(1440);
-print(chartData)
+
+//print(chartData)
 
 // Ordenando la data
 
