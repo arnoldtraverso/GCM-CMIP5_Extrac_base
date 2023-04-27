@@ -18,7 +18,7 @@
 
 // Ingresar el shapefile
 
-var HidroCuenca = ee.FeatureCollection("projects/ee-arnoldtraverso/assets/UH_Pacifico");
+var HidroCuenca = ee.FeatureCollection("projects/ee-arnoldtraverso/assets/Shp_ucayali");
 
 // Agregar a mapa, en base a color
 
@@ -31,14 +31,15 @@ var estilo = {
 var UHData = HidroCuenca.size().getInfo()
 Map.addLayer(HidroCuenca.style(estilo))
 
-// 2. Agregar los atributos para los GCM CMIP5
+// 2. Agregar los atributos para los GCM CMIP5, en total se tienen 22 modelos
 
-var listModel = [ 'ACCESS1-0', 'bcc-csm1-1', 'BNU-ESM', 'CanESM2',
-                  'CCSM4', 'CESM1-BGC', 'CNRM-CM5', 'CSIRO-Mk3-6-0',
-                  'GFDL-CM3', 'GFDL-ESM2G', 'GFDL-ESM2M', 'inmcm4', 'IPSL-CM5A-LR', 
-                  'IPSL-CM5A-MR', 'MIROC-ESM', 'MIROC-ESM-CHEM', 'MIROC5', 'MPI-ESM-LR',
-                  'MPI-ESM-MR', 'MRI-CGCM3', 'NorESM1-M'
-                  ];
+var listModel = [ //'ACCESS1-0', 'bcc-csm1-1', 'BNU-ESM', 'CanESM2'
+                  //'CCSM4', 'CESM1-BGC', 'CNRM-CM5', 'CSIRO-Mk3-6-0'
+                  //'GFDL-CM3', 'GFDL-ESM2G', 'GFDL-ESM2M', 'inmcm4'
+                  //'IPSL-CM5A-LR', 'IPSL-CM5A-MR', 'MIROC-ESM', 'MIROC-ESM-CHEM'
+                  //'MIROC5', 'MPI-ESM-LR', 'MPI-ESM-MR'
+                  'MRI-CGCM3', 'NorESM1-M'
+                ];
 
 var listScenario = ['historical']; // Escenario
 var listVariable = ['pr'];         // variable pr, tasmin, tasmax
@@ -78,9 +79,10 @@ for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
   print('Mostrar modelo y escenario:', param.model, param.scenario)
   
   // Fechas del modelo historico, Formato Año mes dia (YYYY-MM-DD)
+  // Para los modelos CMIP5, el periodo historico va desde 1950 hasta 2005
   
-  var DateIni = '1990-01-01';
-  var DateFin = '1990-12-31';
+  var DateIni = '1981-01-01';
+  var DateFin = '2005-12-31';
   
   // 3. Ejecucion para extrccion de datos
   
@@ -162,7 +164,7 @@ Map.addLayer(HidroCuenca.style(estilo2));
 
 var chartData = DataEXP.select(['fecha', 'valor']).limit(1440);
 
-//print(chartData)
+// print(chartData)
 
 // Ordenando la data
 
