@@ -56,7 +56,7 @@ var listModel = [ 'ACCESS1-0',
                   //'NorESM1-M'
                 ];
 
-var listScenario = ['rcp45'];     // Escenario 'historical', 'rcp45', 'rcp85'
+var listScenario = ['rcp85'];     // Escenario 'historical', 'rcp45', 'rcp85'
 var listVariable = ['tasmax'];    // variable pr, tasmin, tasmax
 var listGCMmodel = [];            // lista de modelos
 
@@ -89,6 +89,24 @@ var TempDATA = function(image){
 
 var listEXP = ee.List([]);
 
+    function extrac(image){
+      
+      var Values = image.select(param.variable)
+                      .reduceRegion({
+                        reducer: ee.Reducer.mean(),
+                        geometry: UH,
+                        scale: 25000,
+                        maxPixels: 1e12
+                      }).get(param.variable)
+                      
+    var PCP = ee.Feature(null);
+    
+    return ee.Feature(PCP.set('valor',ee.Number(Values))
+                         .set('cuenca', 'UH_' + i)
+                         .set('fecha', ee.String(image.date().format('YYYY-MM-DD'))))
+
+    }
+
 for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
   
     var param = {model: listGCMmodel[listGCM][0],      // Modelo GCM
@@ -110,7 +128,7 @@ for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
   if(param.scenario !== 'historical'){
     
     DateIni = '2006-01-01';
-    DateFin = '2100-12-31';
+    DateFin = '2007-12-31';
     
   } else if (param.scenario == 'historical'){
     
@@ -143,23 +161,6 @@ for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
       
       SelectGCM = DatasetGCM.select(param.variable).map(TempDATA);
       
-    }
-    
-    function extrac(image){
-      var ValuesPCP = image.select(param.variable)
-                      .reduceRegion({
-                        reducer: ee.Reducer.mean(),
-                        geometry: UH,
-                        scale: 25000,
-                        maxPixels: 1e12
-                      }).get(param.variable)
-                      
-    var PCP = ee.Feature(null);
-    
-    return ee.Feature(PCP.set('valor',ee.Number(ValuesPCP))
-                         .set('cuenca', 'UH_' + i)
-                         .set('fecha', ee.String(image.date().format('YYYY-MM-DD'))))
-                      
     }
     
     var GCM = SelectGCM.map(extrac);
