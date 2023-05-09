@@ -33,17 +33,32 @@ Map.addLayer(HidroCuenca.style(estilo))
 
 // 2. Agregar los atributos para los GCM CMIP5, en total se tienen 22 modelos
 
-var listModel = [ //'ACCESS1-0', 'bcc-csm1-1', 'BNU-ESM', 'CanESM2'
-                  //'CCSM4', 'CESM1-BGC', 'CNRM-CM5', 'CSIRO-Mk3-6-0'
-                  //'GFDL-CM3', 'GFDL-ESM2G', 'GFDL-ESM2M', 'inmcm4'
-                  //'IPSL-CM5A-LR', 'IPSL-CM5A-MR', 'MIROC-ESM', 'MIROC-ESM-CHEM'
-                  //'MIROC5', 'MPI-ESM-LR', 'MPI-ESM-MR'
-                  'MRI-CGCM3', 'NorESM1-M'
+var listModel = [ 'ACCESS1-0',
+                  'bcc-csm1-1' 
+                  //'BNU-ESM',
+                  //'CanESM2',
+                  //'CCSM4',
+                  //'CESM1-BGC',
+                  //'CNRM-CM5', 
+                  //'CSIRO-Mk3-6-0',
+                  //'GFDL-CM3', 
+                  //'GFDL-ESM2G', 
+                  //'GFDL-ESM2M',
+                  //'inmcm4',
+                  //'IPSL-CM5A-LR',
+                  //'IPSL-CM5A-MR',
+                  //'MIROC-ESM', 
+                  //'MIROC-ESM-CHEM',
+                  //'MIROC5', 
+                  //'MPI-ESM-LR', 
+                  //'MPI-ESM-MR',
+                  //'MRI-CGCM3', 
+                  //'NorESM1-M'
                 ];
 
-var listScenario = ['historical']; // Escenario
-var listVariable = ['pr'];         // variable pr, tasmin, tasmax
-var listGCMmodel = [];             // lista de modelos
+var listScenario = ['rcp45'];     // Escenario 'historical', 'rcp45', 'rcp85'
+var listVariable = ['tasmax'];    // variable pr, tasmin, tasmax
+var listGCMmodel = [];            // lista de modelos
 
 // Definicion de modelos seleccionados
 
@@ -58,10 +73,15 @@ listModel.forEach(function(model){
 
 print('ver lista de modelos seleccionados', listGCMmodel)
 
-// Llevando la data de precipitacion a mm/dia
+// Llevando la data de precipitacion a mm/dia y los datos de temperatura a ºC
 
 var PcpDATA = function(image){
   return image.multiply(86400)
+  .copyProperties(image, ["system:time_start"]
+  )};
+
+var TempDATA = function(image){
+  return image.subtract(273.15)
   .copyProperties(image, ["system:time_start"]
   )};
 
@@ -81,8 +101,23 @@ for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
   // Fechas del modelo historico, Formato Año mes dia (YYYY-MM-DD)
   // Para los modelos CMIP5, el periodo historico va desde 1950 hasta 2005
   
-  var DateIni = '1981-01-01';
-  var DateFin = '2005-12-31';
+  //var DateIni = '1981-01-01';
+  //var DateFin = '2005-12-31';
+  
+  var DateIni;
+  var DateFin;
+  
+  if(param.scenario !== 'historical'){
+    
+    DateIni = '2006-01-01';
+    DateFin = '2100-12-31';
+    
+  } else if (param.scenario == 'historical'){
+    
+    DateIni = '1981-01-01';
+    DateFin = '2005-12-31';
+    
+  }
   
   // 3. Ejecucion para extrccion de datos
   
@@ -96,7 +131,19 @@ for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
                      .filterMetadata('scenario', 'equals', param.scenario)
                      .filterBounds(UH);
     
-    var SelectGCM = DatasetGCM.select(param.variable).map(PcpDATA);
+    // var SelectGCM = DatasetGCM.select(param.variable);
+    
+    var SelectGCM;
+    
+    if(param.variable == 'pr'){
+      
+      SelectGCM = DatasetGCM.select(param.variable).map(PcpDATA);
+    
+    } else if (param.variable == 'tasmin' || param.variable == 'tasmax') {
+      
+      SelectGCM = DatasetGCM.select(param.variable).map(TempDATA);
+      
+    }
     
     function extrac(image){
       var ValuesPCP = image.select(param.variable)
@@ -115,8 +162,8 @@ for (var listGCM = 0; listGCM < listGCMmodel.length; listGCM++){
                       
     }
     
-    var PCPGCM = SelectGCM.map(extrac);
-    listEXP = listEXP.add(PCPGCM);
+    var GCM = SelectGCM.map(extrac);
+    listEXP = listEXP.add(GCM);
     
   }
   
@@ -131,19 +178,16 @@ var DataEXP = ee.FeatureCollection(listEXP).flatten();
 // Estilo de colores
 
 var rgbVis = {
-  bands: ['pr'],
+  bands: listVariable,
   max: 20,
   min: 0,
   'palette': ['604791', '1d6b99', '39a8a7', '0f8755', '76b349', 'f0af07',
             'e37d05', 'cf513e', '96356f', '724173', '9c4f97', '696969']
 };
 
-// Seleccionado una fecha para plot
-
-var featureCol = ee.ImageCollection(SelectGCM.filterDate('2000-03-01', '2000-03-02'));
-
 // Agregando al mapa
 
+var featureCol = ee.ImageCollection(SelectGCM);
 Map.addLayer(featureCol, rgbVis);
 
 // Estilo para shapefile de cuencas
@@ -154,7 +198,7 @@ var estilo2 = {
   width: 2                // Ancho del borde en pixeles
 };
 
-// Agregando al mapa
+// Agregando al mapa la cuenca
 
 Map.addLayer(HidroCuenca.style(estilo2));
 
@@ -162,7 +206,7 @@ Map.addLayer(HidroCuenca.style(estilo2));
 // Crear el gráfico de la serie de tiempo
 // ******************************************************************************
 
-var chartData = DataEXP.select(['fecha', 'valor']).limit(1440);
+var chartData = DataEXP.select(['fecha', 'valor']).limit(5000);
 
 // print(chartData)
 
@@ -187,6 +231,6 @@ print(timeSeriesChart)
 Export.table.toDrive({
   collection: DataEXP,
   description: 'GCM_CMIP5_'+ param.variable + '_' + param.scenario,
-  folder: 'GCM_CMIP5' + '_' + param.variable, 
+  folder: 'GCM_CMIP5_ucayali' + '_' + param.variable, 
   fileFormat: 'CSV'
 })
